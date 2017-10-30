@@ -1,0 +1,5 @@
+root=true
+
+[*.{h, hpp, hxx, hh, c, cpp, cxx, cc, cs, vb, vbs, py, pyx, bat, cmd, ini}]
+indent_style=tab
+indent_size=4
