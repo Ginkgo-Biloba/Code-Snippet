@@ -13,18 +13,18 @@ using std::logic_error;
 namespace Calc
 {
 /**< 从表达式中 index 处开始，抽出一个合法数字的字符串形式
-并移动 index 至数字后一个字符位置，可能越界 */
+ * 并移动 index 至数字后一个字符位置，可能越界 */
 string extractNum(const string &Exp, unsigned index);
 /**< 计算运算符优先级：'+''-'=1; '*''/''%'=2; else=0 */
 int precOp(const char &c);
 /**< 规整中缀表达式，加 0 */
 void normExp(string &inExp) throw(logic_error);
 /**< 计算中缀表达式的值 */
-double caclInExp(const string &inExp) throw(logic_error);
+double calcInExp(const string &inExp) throw(logic_error);
 /**< 将中缀表达式转为后缀表达式 */
 string inToPost(const string &inExp);
 /**< 计算后缀表达式的值 */
-double caclPostExp(const string &postExp) throw(logic_error);
+double calcPostExp(const string &postExp) throw(logic_error);
 }
 
 namespace Calc
@@ -35,12 +35,11 @@ namespace Calc
  * \param Exp 表达式
  * \param index 表达式下标索引
  * \return string 数字的字符串形式
- *
  */
 inline string extractNum(const string &Exp, unsigned &index)
 {
 	bool sciNum = false; // 科学记数法
-	bool numPoint =  false; // 小数点标记
+	bool numPoint = false; // 小数点标记
 	char c = Exp.at(index);
 	string strNum;
 	strNum += c;
@@ -59,8 +58,7 @@ inline string extractNum(const string &Exp, unsigned &index)
 			strNum += c;
 			sciNum = true;
 		}
-		else
-			{break;}
+		else break;
 		++index;
 	}
 	return strNum;
@@ -70,7 +68,6 @@ inline string extractNum(const string &Exp, unsigned &index)
  *
  *  \param [in] c 运算符
  *  \return 优先级
- *
  *  \details '+''-'=1; '*''/''%'=2; else=0
  */
 inline int precOp(const char &c)
@@ -90,7 +87,6 @@ inline int precOp(const char &c)
 /** \brief 规整中缀表达式，加 0
  *
  *  \param [in] inExp 中缀表达式
- *
  *  \details 直接改变原表达式
  */
 inline void normExp(string &inExp) throw(logic_error)
@@ -99,10 +95,7 @@ inline void normExp(string &inExp) throw(logic_error)
 	char c = inExp.at(0);
 	char d = '0';
 	// 前置正负号前加 0
-	if (c == '+' || c == '-')
-	{
-		inExp.insert(0, 1, '0');
-	}
+	if (c == '+' || c == '-') inExp.insert(0, 1, '0');
 	else if (c < '0' || c > '9')
 	{
 		string er = "\n>>_<< 表达式不对。错误在 \"";
@@ -115,18 +108,13 @@ inline void normExp(string &inExp) throw(logic_error)
 	{
 		c = inExp.at(i - 1);
 		d = inExp.at(i);
-		if (c == ' ')
-		{
-			++i; continue; // 跳过空格
-		}
+		if (c == ' ') { ++i; continue; }// 跳过空格
 		else if (c == '(')
-		{
 			if (d == '+' || d == '-')
 			{
 				inExp.insert(i - 1, "0");
 				++i;
 			}
-		}
 	}
 }
 
@@ -137,26 +125,23 @@ inline void normExp(string &inExp) throw(logic_error)
  *
  *  \details 表达式有误则会抛出异常
  */
-inline double caclInExp(const string &inExp) throw(logic_error)
+inline double calcInExp(const string &inExp) throw(logic_error)
 {
-	if (inExp.empty())
-		throw logic_error("\n空的表达式。\n");
+	if (inExp.empty()) throw logic_error("\n空的表达式。\n");
 	char c = 0;
 	std::stack<double> dStack; // 存储操作数和中间结果
 	std::stack<char> cStack; // 存储运算符
 	for (unsigned i = 0; i < inExp.size(); ++i)
 	{
 		c = inExp.at(i);
-		if (c == ' ') // 跳过空格
-			{continue;}
+		if (c == ' ') continue; // 跳过空格
 		else if (c >= '0' && c <= '9')
 		{
 			string strValue = extractNum(inExp, i);
 			--i; // 不加不行
 			dStack.push(atof(strValue.c_str()));
 		}
-		else if (c == '(')
-			{cStack.push(c);}
+		else if (c == '(') cStack.push(c);
 		else if (c == ')')
 		{
 			while (cStack.top() != '(')
@@ -181,8 +166,8 @@ inline double caclInExp(const string &inExp) throw(logic_error)
 		}
 		else if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%')
 		{
-			if (cStack.empty()) {cStack.push(c);}
-			else if (precOp(c) > precOp(cStack.top())) {cStack.push(c);}
+			if (cStack.empty()) cStack.push(c);
+			else if (precOp(c) > precOp(cStack.top())) cStack.push(c);
 			else
 			{
 				while ((!cStack.empty()) && precOp(c) <= precOp(cStack.top()))
@@ -214,7 +199,7 @@ inline double caclInExp(const string &inExp) throw(logic_error)
 			break;
 		}
 	}
-	while (!cStack.empty())
+	while (!cStack.empty()) // 再有错误就在栈上崩掉吧
 	{
 		double d2 = dStack.top(); dStack.pop();
 		double d1 = dStack.top(); dStack.pop();
@@ -233,7 +218,7 @@ inline double caclInExp(const string &inExp) throw(logic_error)
 		dStack.push(d1);
 	}
 	cStack.pop();
-	double d(dStack.top());
+	double d = dStack.top();
 	return d;
 }
 
@@ -241,7 +226,6 @@ inline double caclInExp(const string &inExp) throw(logic_error)
  *
  *  \param [in] inExp 规整后的中缀表达式
  *  \return 后缀表达式
- *
  *  \details Details
  */
 inline string inToPost(const string & inExp)
@@ -253,20 +237,17 @@ inline string inToPost(const string & inExp)
 	for (unsigned i = 0; i < inExp.size(); ++i)
 	{
 		c = inExp.at(i);
-		if (c == ' ') // 跳过空格
-			{continue;}
-		// 操作数：数字
-		else if (c >= '0' && c <= '9')
+		if (c == ' ') continue; // 跳过空格
+		else if (c >= '0' && c <= '9') // 操作数：数字
 		{
 			postExp += extractNum(inExp, i);
 			--i;
 			postExp += ' '; // 空格用于划分数字
 		}
-		// 操作子：运算符
-		else if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%')
+		else if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%') // 操作子：运算符
 		{
 			while ((!postStack.empty()) && (postStack.top() != '(') &&
-					(precOp(postStack.top()) >= precOp(c)))
+				(precOp(postStack.top()) >= precOp(c)))
 			{
 				postExp += postStack.top();
 				postExp += ' ';
@@ -274,10 +255,8 @@ inline string inToPost(const string & inExp)
 			}
 			postStack.push(c);
 		}
-		// 左括号
-		else if (c == '(') postStack.push(c);
-		// 右括号
-		else if (c == ')')
+		else if (c == '(') postStack.push(c); // 左括号
+		else if (c == ')') // 右括号
 		{
 			while (postStack.top() != '(')
 			{
@@ -308,7 +287,6 @@ inline string inToPost(const string & inExp)
  *
  *  \param [in] postExp 后缀表达式
  *  \return 计算结果
- *
  *  \details 表达式有误则会抛出异常
  */
 inline double caclPostExp(const string & postExp) throw(logic_error)
@@ -320,8 +298,7 @@ inline double caclPostExp(const string & postExp) throw(logic_error)
 	for (unsigned i = 0; i < postExp.size(); ++i)
 	{
 		c = postExp.at(i);
-		if (c == ' ') // 跳过空格
-			{continue;}
+		if (c == ' ') continue; // 跳过空格
 		else if (c >= '0' && c <= '9')
 		{
 			string strValue = extractNum(postExp, i);
@@ -350,10 +327,9 @@ inline double caclPostExp(const string & postExp) throw(logic_error)
 			dStack.push(d1);
 		}
 	}
-	double d(dStack.top());
+	double d = dStack.top();
 	return d;
 }
 }
 
 #endif // CALC_H_INCLUDED
-

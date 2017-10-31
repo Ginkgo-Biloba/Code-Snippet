@@ -20,7 +20,8 @@
 #define SIMD_SSE_41	5	// SSE4.1
 #define SIMD_SSE_42	6	// SSE4.2
 
-const char*	simd_sse_names[] = {
+const char*	simd_sse_names[] =
+{
 	"None",
 	"SSE",
 	"SSE2",
@@ -38,23 +39,23 @@ BOOL	simd_mmx()
 	DWORD	v_edx;
 
 	// check processor support
-	__try 
+	__try
 	{
-		_asm 
+		_asm
 		{
 			mov eax, 1
 			cpuid
-			mov v_edx, edx
+				mov v_edx, edx
 		}
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER)
 	{
 		return FALSE;
 	}
-	if ( v_edx & BIT_DX_MMX )
+	if (v_edx & BIT_DX_MMX)
 	{
 		// check OS support
-		__try 
+		__try
 		{
 			_asm
 			{
@@ -64,15 +65,14 @@ BOOL	simd_mmx()
 			return TRUE;
 		}
 		__except (EXCEPTION_EXECUTE_HANDLER)
-		{
-		}
+		{}
 	}
 	return FALSE;
 }
 
 
 // 检测SSE系列指令集的支持级别
-int	simd_sse_level()
+int simd_sse_level()
 {
 	const DWORD	BIT_D_SSE = 0x02000000;	// bit 25
 	const DWORD	BIT_D_SSE2 = 0x04000000;	// bit 26
@@ -85,36 +85,36 @@ int	simd_sse_level()
 	DWORD	v_ecx;
 
 	// check processor support
-	__try 
+	__try
 	{
-		_asm 
+		_asm
 		{
 			mov eax, 1
 			cpuid
-			mov v_edx, edx
-			mov v_ecx, ecx
+				mov v_edx, edx
+				mov v_ecx, ecx
 		}
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER)
 	{
 		return SIMD_SSE_NONE;
 	}
-	if ( v_edx & BIT_D_SSE )
+	if (v_edx & BIT_D_SSE)
 	{
 		rt = SIMD_SSE_1;
-		if ( v_edx & BIT_D_SSE2 )
+		if (v_edx & BIT_D_SSE2)
 		{
 			rt = SIMD_SSE_2;
-			if ( v_ecx & BIT_C_SSE3 )
+			if (v_ecx & BIT_C_SSE3)
 			{
 				rt = SIMD_SSE_3;
-				if ( v_ecx & BIT_C_SSSE3 )
+				if (v_ecx & BIT_C_SSSE3)
 				{
 					rt = SIMD_SSE_3S;
-					if ( v_ecx & BIT_C_SSE41 )
+					if (v_ecx & BIT_C_SSE41)
 					{
 						rt = SIMD_SSE_41;
-						if ( v_ecx & BIT_C_SSE42 )
+						if (v_ecx & BIT_C_SSE42)
 						{
 							rt = SIMD_SSE_42;
 						}
@@ -125,7 +125,7 @@ int	simd_sse_level()
 	}
 
 	// check OS support
-	__try 
+	__try
 	{
 		_asm
 		{
@@ -136,7 +136,6 @@ int	simd_sse_level()
 	{
 		return SIMD_SSE_NONE;
 	}
-
 	return rt;
 }
 
@@ -147,9 +146,9 @@ int main(int argc, char* argv[])
 	int	nsse = simd_sse_level();
 	printf("MMX: %d\n", bmmx);
 	printf("SSE: %d\n", nsse);
-	for(i=1; i<sizeof(simd_sse_names); ++i)
+	for (i = 1; i < sizeof(simd_sse_names); ++i)
 	{
-		if (nsse>=i)	printf("\t%s\n", simd_sse_names[i]);
+		if (nsse >= i)	printf("\t%s\n", simd_sse_names[i]);
 	}
 
 	// wait

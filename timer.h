@@ -5,7 +5,7 @@
 #include <time.h>
 #include <stdio.h>
 
-#ifdef WIN32 // Windows
+#ifdef _WIN32 // Windows
 #include <Windows.h>
 typedef double time_type;
 static _LARGE_INTEGER timeStart, timeOver;
@@ -42,7 +42,7 @@ static time_type tickStart, tickOver;
 inline time_type getCycleCount()
 {
 	time_type result;
-	__asm__ __volatile__ ("rdtsc": "=A" (result));
+	__asm__ __volatile__("rdtsc": "=A"(result));
 	return result;
 }
 #elif defined(__x86_64__)
@@ -56,7 +56,7 @@ inline time_type getCycleCount()
 
 // 启动计时
 static inline time_type startTiming()
-{tickStart = getCycleCount()}
+{ tickStart = getCycleCount() }
 
 // 计时，返回时间单位：周期
 static inline time_type getTiming()
@@ -76,7 +76,7 @@ static inline void showTiming()
 // 睡眠，单位：毫秒
 static inline void waitTime(unsigned long ms)
 {
-#ifdef WIN32 // Windows
+#ifdef _WIN32 // Windows
 	Sleep(ms);
 #else // Linux
 	usleep(ms * 1000);
