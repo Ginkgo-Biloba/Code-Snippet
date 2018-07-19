@@ -1,86 +1,332 @@
-﻿// timer.h
-#ifndef A_TIMER_H
-#define A_TIMER_H
+﻿#ifndef TIMER_H
+#define TIMER_H
 
-#include <time.h>
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4996) // strcpy
+#endif
+
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
-#ifdef _WIN32 // Windows
+#ifdef __cplusplus
+#define INLINE_KEYWORD inline
+#else
+#define INLINE_KEYWORD
+#endif
+
+
+#if (defined _WIN32) || (defined _WIN64) || (defined _WINDOWS) || (defined _MSC_VER)
+/* Windows */
 #include <Windows.h>
-typedef double time_type;
-static _LARGE_INTEGER timeStart, timeOver;
-static double dqFreq;
-
-// 启动计时
-static inline void startTiming()
+static INLINE_KEYWORD void timer_sleep(unsigned long ms)
 {
-	_LARGE_INTEGER f;
-	QueryPerformanceFrequency(&f);
-	dqFreq = (double)(f.QuadPart);
-	QueryPerformanceCounter(&timeStart);
+	Sleep(ms);
 }
-
-// 计时，返回时间单位：毫秒
-static inline time_type getTiming()
-{
-	QueryPerformanceCounter(&timeOver);
-	return (double)(timeOver.QuadPart - timeStart.QuadPart) / dqFreq * 1000;
-}
-
-// 显示计时
-static inline void showTiming()
-{
-	time_type t = getTiming();
-	printf("\n---------- 用时 %lf 毫秒 ---------- \n", t);
-}
-
-#else // Linux
+#elif (defined __unix) || (defined __unix__) || (defined __linux) || (defined __linux__) && \
+	(defined(__i386__) || defined(__x86_64__))
+/* Linux 或 Unix */
 #include <unistd.h>
-typedef unsigned long long time_type;
-static time_type tickStart, tickOver;
-#if defined(__i386__)
-inline time_type getCycleCount()
+typedef unsigned long long timer_type;
+static INLINE_KEYWORD void timer_sleep(timer_type ms)
 {
-	time_type result;
+	usleep(ms * 1000u);
+}
+# if defined(__i386__)
+static INLINE_KEYWORD timer_type getCycleCount()
+{
+	timer_type result;
 	__asm__ __volatile__("rdtsc": "=A"(result));
 	return result;
 }
-#elif defined(__x86_64__)
-inline time_type getCycleCount()
+# elif defined(__x86_64__)
+static INLINE_KEYWORD timer_type getCycleCount()
 {
-	time_type hi, lo;
+	timer_type hi, lo;
 	__asm__ __volatile__("rdtsc": "=a"(lo), "=d"(hi));
-	return ((time_type)(lo)) | ((time_type)(hi) << 32);
+	return lo | (hi << 32);
 }
+# else
+#  error should not parse here.
+# endif
+#else
+/* 其他，用 clock_t 模拟 */
+#include <time.h>
+typedef clock_t timer_type;
+static INLINE_KEYWORD timer_type getCycleCount()
+{
+	return clock();
+}
+#endif // OS
+
+/// Timer 类或结构体
+
+#ifdef __cplusplus
+# if (defined _WIN32) || (defined _WIN64) || (defined _WINDOWS) || (defined _MSC_VER)
+class Timer
+{
+public:
+	// 初始化
+	void initialize(char const* d)
+	{
+		QueryPerformanceFrequency(&stop);
+		cycle = 1000.0 / static_cast<double>(stop.QuadPart);
+		if (d)
+		{
+			size_t const len = strlen(d) + 1u;
+			desp = static_cast<char*>(malloc(sizeof(char)* len));
+			strcpy(desp, d);
+		}
+		else
+			desp = nullptr;
+		QueryPerformanceCounter(&start);
+	}
+
+	// 不增加深度
+	Timer(char const* d = nullptr)
+	{
+		initialize(d);
+	}
+
+	// 增加深度
+	Timer(int, char const* d = nullptr)
+	{
+		initialize(d);
+		depth++;
+	}
+
+	// 步计
+	void stepTime(char const* d = nullptr)
+	{
+		QueryPerformanceCounter(&stop);
+		double rst = (stop.QuadPart - start.QuadPart) * cycle;
+		printf("%*s%s; %f milliseconds (depth %u)\n", depth, "", d, rst, depth);
+	}
+
+	// 圈计
+	void cycleTime(char const* d = nullptr)
+	{
+		stepTime(d);
+		start = stop;
+	}
+
+	// 重置
+	void resetTime()
+	{
+		QueryPerformanceCounter(&start);
+	}
+
+	~Timer()
+	{
+		if (desp)
+		{
+			stepTime(desp);
+			free(desp);
+		}
+		depth--;
+	}
+
+private:
+	static unsigned int depth;
+
+	double cycle;
+	LARGE_INTEGER start, stop;
+	char* desp;
+
+	Timer(Timer const&) {}
+	Timer& operator=(Timer const&) { return *this; }
+};
+
+# else
+class Timer
+{
+public:
+	// 初始化
+	void initialize(char const* d)
+	{
+		if (d)
+		{
+			size_t const len = strlen(d) + 1u;
+			desp = static_cast<char*>(malloc(sizeof(char)* len));
+			strcpy(desp, d);
+		}
+		else
+			desp = nullptr;
+		start = getCycleCount();
+	}
+
+	// 不增加深度
+	Timer(char const* d = nullptr)
+	{
+		initialize(d);
+	}
+
+	// 增加深度
+	Timer(int, char const* d = nullptr)
+	{
+		initialize(d);
+		depth++;
+	}
+
+	// 步计
+	void stepTime(char const* d = nullptr)
+	{
+		stop = getCycleCount();
+		unsigned long long rst = static_cast<unsigned long long>(stop - start);
+		printf("%*s%s; %llu clocks (depth %u)\n", depth, "", d, rst, depth);
+	}
+
+	// 圈计
+	void cycleTime(char const* d = nullptr)
+	{
+		stepTime(d);
+		start = stop;
+	}
+
+	// 重置
+	void resetTime()
+	{
+		start = getCycleCount();
+	}
+
+	~Timer()
+	{
+		if (desp)
+		{
+			stepTime(desp);
+			free(desp);
+		}
+		depth--;
+	}
+
+private:
+	static unsigned int depth;
+
+	unsigned long long start, stop;
+	char* desp;
+
+	Timer(Timer const&) {}
+	Timer& operator=(Timer const&) { return *this; }
+};
+
+# endif // OS
+
+#define TIMER_DECLARE_DEPTH \
+	unsigned int Timer::depth = 0u
+
+#define TIMER_ME \
+	Timer timer_dumb_class_(__FUNCTION__)
+#define TIMER_ME_DEEPER \
+	Timer timer_dumb_class_(0, __FUNCTION__)
+
+# define TIMER_DECLARE \
+	Timer timer_dumb_var_
+# define TIMER_DECLARE_DEEPER \
+	Timer timer_dumb_var_(0)
+# define TIMER_STEP(desp) \
+	timer_dumb_var_.stepTime(desp)
+# define TIMER_CYCLE(desp) \
+	timer_dumb_var_.cycleTime(desp)
+# define TIMER_RESET \
+	timer_dumb_var_.resetTime()
+// 只在析构函数中递减，因为只有构造函数增加缩进
+# define TIMER_DECREASE_DEPTH
+
+#else // c
+extern unsigned int timer_depth;
+# if (defined _WIN32) || (defined _WIN64) || (defined _WINDOWS) || (defined _MSC_VER)
+/* Windows */
+typedef struct timer_struct
+{
+	LARGE_INTEGER start, stop;
+	double cycle;
+} Timer;
+static void timer_init(Timer* timer)
+{
+	QueryPerformanceFrequency(&(timer->stop));
+	timer->cycle = 1000.0 / (double)(timer->stop.QuadPart);
+	QueryPerformanceCounter(&(timer->start));
+}
+static void timer_init_depth(Timer* timer)
+{
+	timer_init(timer);
+	timer_depth++;
+}
+static void timer_step_time(Timer* timer, char const* d)
+{
+	QueryPerformanceCounter(&(timer->stop));
+	double rst = (timer->stop.QuadPart - timer->start.QuadPart) * timer->cycle;
+	printf("%*s%s; %f milliseconds (depth %u)\n", timer_depth, "", d, rst, timer_depth);
+}
+static void timer_cycle_time(Timer* timer, char const* d)
+{
+	timer_step_time(timer, d);
+	timer->start = timer->stop;
+}
+static void timer_reset_time(Timer* timer)
+{
+	QueryPerformanceCounter(&(timer->start));
+}
+
+# else
+/* LInux、Unix 或其他 */
+typedef struct timer_struct
+{
+	timer_type start, stop;
+} Timer;
+static void timer_init(Timer* timer)
+{
+	timer->start = getCycleCount();
+}
+static void timer_init_depth(Timer* timer)
+{
+	timer_init(timer);
+	timer_depth++;
+}
+static void timer_step_time(Timer* timer, char const* d)
+{
+	timer->stop = getCycleCount();
+	unsigned long long rst = (unsigned long long)(timer->stop - timer->start);
+	printf("%*s%s; %llu clocks (depth %u)\n", timer_depth, "", d, rst, timer_depth);
+}
+static void timer_cycle_time(Timer* timer, char const* d)
+{
+	timer_step_time(timer, d);
+	timer->start = timer->stop;
+}
+static void timer_reset_time(Timer* timer)
+{
+	timer->start = getCycleCount();
+}
+# endif
+
+# define TIMER_DECLARE_DEPTH \
+	unsigned int timer_depth = 0u
+/* 没有析构函数，需要手动递减 */
+# define TIMER_DECREASE_DEPTH \
+	timer_depth--
+/* 存在下面两个是为了保持兼容 */
+#define TIMER_ME 
+#define TIMER_ME_DEEPER
+
+# define TIMER_DECLARE \
+	Timer timer_dumb_var_; \
+	timer_init(&timer_dumb_var_)
+# define TIMER_DECLARE_DEEPER \
+	Timer timer_dumb_var_; \
+	timer_init_depth(&timer_dumb_var_)
+# define TIMER_STEP(desp) \
+	timer_step_time(&timer_dumb_var_, desp)
+# define TIMER_CYCLE(desp) \
+	timer_cycle_time(&timer_dumb_var_, desp)
+# define TIMER_RESET \
+	timer_reset_time(&timer_dumb_var_)
+
+#endif // __cplusplus
+
+#ifdef _MSC_VER
+#pragma warning(pop) // strcpy
 #endif
 
-// 启动计时
-static inline time_type startTiming()
-{ tickStart = getCycleCount() }
-
-// 计时，返回时间单位：周期
-static inline time_type getTiming()
-{
-	tickOver = getCycleCount();
-	return (tickOver - tickStart);
-}
-
-// 显示计时
-static inline void showTiming()
-{
-	timet_ype t = getCycleCount();
-	printf("\n---------- 用时 %llu 时钟周期 ---------- \n", t);
-}
-#endif
-
-// 睡眠，单位：毫秒
-static inline void waitTime(unsigned long ms)
-{
-#ifdef _WIN32 // Windows
-	Sleep(ms);
-#else // Linux
-	usleep(ms * 1000);
-#endif
-}
-
-#endif // A_TIMER_H
+#endif // TIMER_HPP
