@@ -1,12 +1,11 @@
-﻿#include <iostream>
+﻿#include <cstdio>
 
-int main(int argc, char **argv)
+int main()
 {
 	long long ago;
 	double world;
 	unsigned letter;
 	short stay;
 	long memories;
-	std::cout << "I miss you.\n";
-	return 0;
+	printf("I miss you.\n");
 }
