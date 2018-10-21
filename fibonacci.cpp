@@ -63,7 +63,7 @@ ullong fibMatrix(ullong n)
 }
 
 
-/** O(log2(N))倍数公式，跟矩阵方法差不多，常数小
+/** O(log2(N))倍数公式
  * F(2n - 1) = F(n)^2 + F(n - 1)^2
  * F(2n) = (F(n - 1) + F(n + 1)) * F(n) = (2F(n - 1) + F(n)) * F(n) */
 ullong fibShift(ullong n)
