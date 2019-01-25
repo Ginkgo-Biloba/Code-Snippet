@@ -23,7 +23,7 @@ void timeit(ullong(*func)(ullong), char const* info)
 /* O(N) 64 位无符号也只能算到 93 项 12200160415121876738 */
 ullong fibonacci(ullong n)
 {
-	ullong fkm1 = 1ull, fk = 0ull; // F(-1) = 1, F(0) = 0
+	ullong fk = 0ull, fkm1 = 1ull; // F(0) = 0, F(-1) = 1
 	for (; n; --n)
 	{
 		ullong fkp1 = fkm1 + fk;
@@ -39,7 +39,7 @@ ullong fibonacci(ullong n)
  * [1 0]     [f(n)     f(n - 1)] */
 ullong fibMatrix(ullong n)
 {
-	ullong A[4] = { 1ull, 1ull, 1ull, 0ull }; // n = 1，底数
+	ullong A[4] = { 1ull, 1ull, 1ull, 0ull }; // n = 1 底数
 	ullong B[4] = { 1ull, 0ull, 0ull, 1ull }; // n = 0
 	for (; n; n >>= 1)
 	{
@@ -52,7 +52,7 @@ ullong fibMatrix(ullong n)
 			C[3] = B[2] * A[1] + B[3] * A[3];
 			B[0] = C[0]; B[1] = C[1]; B[2] = C[2]; B[3] = C[3];
 		}
-		// x *= x，其实最后一个循环可以算这个的
+		// x *= x，其实最后一个循环可以不算这个
 		C[0] = A[0] * A[0] + A[1] * A[2];
 		C[1] = A[0] * A[1] + A[1] * A[3];
 		C[2] = A[2] * A[0] + A[3] * A[2];
@@ -72,8 +72,8 @@ ullong fibShift(ullong n)
 	ullong mask = 1ull << (sizeof(ullong) * 8 - 1);
 	while (!(mask & n) && mask) mask >>= 1;
 
-	// f(k), f(k - 1). k = 0, F(-1) = 1
-	ullong fkm1 = 1ull, fk = 0ull;
+	// f(k), f(k - 1)
+	ullong fk = 0ull, fkm1 = 1ull;
 	for (; mask; mask >>= 1)
 	{
 		ullong f2km1 = fk * fk + fkm1 * fkm1;
@@ -100,6 +100,6 @@ int main()
 	timeit(fibMatrix, "fibMatrix");
 	timeit(fibShift, "fibShift");
 
-	for (ullong n = 1ull; n--;)
+	for (ullong n = 0ull; n--;)
 		printf("fib(%2llu) = %llu\n", n, fibShift(n));
 }
