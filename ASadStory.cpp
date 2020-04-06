@@ -4,8 +4,8 @@ int main()
 {
 	long long ago;
 	double world;
-	unsigned letter;
 	short stay;
+	unsigned letter;
 	long memories;
 	printf("I miss you.\n");
 }
